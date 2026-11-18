@@ -1,13 +1,14 @@
 import { claudeInterpreter } from "./claude";
 import { mockInterpreter } from "./mock/interpreter";
 import { mockModel } from "./mock/model";
-import { mockPreview } from "./mock/preview";
+import { mockPreview, mockReference } from "./mock/preview";
 import { httpMeasurer, stlMeasurer } from "./stlMeasurer";
 import type { Providers } from "./types";
 
 export const mockProviders: Providers = {
   interpreter: mockInterpreter,
   preview: mockPreview,
+  reference: mockReference,
   model: mockModel,
   geometry: stlMeasurer,
 };

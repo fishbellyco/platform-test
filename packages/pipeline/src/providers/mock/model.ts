@@ -1,26 +1,24 @@
 import type { DesignSpec, ProductTemplate } from "@fishbelly/core";
 import type { ModelGenerator } from "../types";
+import { figurineProfile } from "./figurine";
 import { centreOffset, radius, shapeParams } from "./shape";
 
 type V = [number, number, number];
 
-/**
- * Builds a closed (solid, not hollow) vase mesh in millimetres as ASCII STL.
- * Stands in for Meshy. Unlike Meshy, it is already at the right scale.
- */
-export function buildMockStl(spec: DesignSpec, template: ProductTemplate, scale = 1): string {
-  const p = shapeParams(spec, template);
-  const rings = 32;
+/** A closed solid of revolution as ASCII STL, standing on z = 0, in millimetres. */
+function latheStl(
+  height: number,
+  radiusAt: (t: number, theta: number) => number,
+  offsetAt: (t: number) => number,
+  scale: number,
+  rings: number,
+): string {
   const segs = 48;
   const at = (i: number, j: number): V => {
     const t = i / rings;
     const theta = (2 * Math.PI * (j % segs)) / segs;
-    const r = radius(p, t, theta);
-    return [
-      (centreOffset(p, t) + r * Math.cos(theta)) * scale,
-      r * Math.sin(theta) * scale,
-      t * p.height * scale,
-    ];
+    const r = radiusAt(t, theta);
+    return [(offsetAt(t) + r * Math.cos(theta)) * scale, r * Math.sin(theta) * scale, t * height * scale];
   };
   const tris: [V, V, V][] = [];
   for (let i = 0; i < rings; i++) {
@@ -29,8 +27,8 @@ export function buildMockStl(spec: DesignSpec, template: ProductTemplate, scale 
       tris.push([a, b, c], [a, c, d]);
     }
   }
-  const bottom: V = [0, 0, 0];
-  const top: V = [centreOffset(p, 1) * scale, 0, p.height * scale];
+  const bottom: V = [offsetAt(0) * scale, 0, 0];
+  const top: V = [offsetAt(1) * scale, 0, height * scale];
   for (let j = 0; j < segs; j++) {
     tris.push([bottom, at(0, j + 1), at(0, j)]);
     tris.push([top, at(rings, j), at(rings, j + 1)]);
@@ -40,6 +38,19 @@ export function buildMockStl(spec: DesignSpec, template: ProductTemplate, scale 
     .map(([a, b, c]) => `facet normal 0 0 0\nouter loop\n${v(a)}\n${v(b)}\n${v(c)}\nendloop\nendfacet`)
     .join("\n");
   return `solid fishbelly_mock\n${body}\nendsolid fishbelly_mock\n`;
+}
+
+/**
+ * Builds a closed (solid, not hollow) mesh of the design in millimetres as ASCII STL.
+ * Stands in for Meshy. Unlike Meshy, it is already at the right scale.
+ */
+export function buildMockStl(spec: DesignSpec, template: ProductTemplate, scale = 1): string {
+  if (template.category === "figurine") {
+    const { height, radiusAt } = figurineProfile(spec, template);
+    return latheStl(height, (t) => radiusAt(t), () => 0, scale, 100);
+  }
+  const p = shapeParams(spec, template);
+  return latheStl(p.height, (t, theta) => radius(p, t, theta), (t) => centreOffset(p, t), scale, 32);
 }
 
 export const mockModel: ModelGenerator = {

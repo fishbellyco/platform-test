@@ -9,6 +9,7 @@ const good: Measurements = {
   baseDiameterMm: 90,
   minWallThicknessMm: 3.4,
   watertight: true,
+  components: 1,
 };
 
 test("locked dimensions survive any proposal", () => {

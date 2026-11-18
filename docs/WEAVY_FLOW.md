@@ -1,7 +1,9 @@
 # Weavy flow → pipeline steps
 
 **Source:** two screenshots of the read-only Weavy workflow (vinyl-figurine mascot, Nov 2026).
-**Status:** mapping only. Nothing here is wired into the pipeline yet.
+**Status:** mapped, and rebuilt in code around the **fisherman figurine** (`fisherman_001`), the
+brand-agnostic example, instead of the pickle. See §7. Runs on mocks; the real image and 3D
+providers are not connected yet.
 Prompt text is transcribed from the screenshots; where a node's text runs off the screen it says *[cut off]*.
 
 ---
@@ -117,7 +119,7 @@ preview seems to have lost the skateboard and turned the jacket sleeves into whi
 | No trademark symbols or text | Can't be verified in code | always a manual review check → `needs_review` |
 | Size of the figurine | Template dimensions (height, base) | both; **values unknown** |
 
-## 6. Open questions
+## 6. Open questions (from the pickle flow)
 
 1. **What does the customer approve?** Meshy builds from the *manufacturing reference*, not the
    render the customer approved, and the two visibly differ. That's a second 2D→3D drift point.
@@ -133,3 +135,45 @@ preview seems to have lost the skateboard and turned the jacket sleeves into whi
 6. **The brand reference image** is a screenshot of flat artwork. Is there an original file, and are there more views?
 7. **Product spec:** figurine height, base and tolerances. And is it rotocast vinyl (needs a master
    and shrinkage) or printed? This is the "first real product" open question in the architecture doc.
+
+## 7. The same flow, built for the fisherman
+
+The pickle flow told us the steps; the product is now the fisherman figurine: a chibi character
+holding a fish that carries the brand's wordmark. Customers personalise the character. The fish,
+wordmark, pose, face style and size are locked. Brand-agnostic: each brand supplies its own wordmark.
+
+| Weavy piece | Where it is now |
+| --- | --- |
+| Brand prompt | `Brand.prompt` (empty for now: the house style is the product's) and `Brand.wordmark` (`FISHBELLY`, `DEMO BRAND`) in `core/src/brands.ts` |
+| Product prompt | `fisherman_001.prompts.preview` in `core/src/template.ts`, with `{{wordmark}}` |
+| Reference image | `assets/references/fisherman_001/lineup.jpg`, listed in `referenceImages` |
+| User prompt | Interpreter → `enforceConstraints()` → `describeSpec()`. The customer's words never reach the image model |
+| Prompt Concatenator | `composePrompts()` in `core/src/prompts.ts`: brand prompt + product prompt + enforced spec |
+| Nano Banana (concept render) | `preview` step, `PreviewGenerator` (mock today) |
+| Manufacturing prompt + Nano Banana | `manufacturing_reference` step, `ReferenceGenerator`; runs only if the template has the prompt (the vase doesn't) |
+| Meshy prompt + Meshy V6 | `model_3d` step: `ModelGenerator` gets the manufacturing reference + `prompts.model3d` |
+| Export | Only after the geometry gate |
+
+**Constraints that were prompt-only in Weavy, now in code:**
+
+| Was | Now |
+| --- | --- |
+| "Only 4 colours" / "exactly four colour regions" | `palette`: colours snap to the printable palette; at most `maxColours` (8, placeholder) including the fixed peach, periwinkle and black |
+| Fixed character identity | `customisation`: `fish`, `wordmark`, `pose`, `props`, `face`, `body_shape` are `false` and get dropped with a note |
+| Size | `height` locked at 100 mm (placeholder), checked on the mesh |
+| "Stable centre of gravity" | `base_diameter` minimum 35 mm (boot footprint). Centre of mass: not yet |
+| "All components physically connected, no floating objects" | `single_piece` check: connected pieces counted on the mesh (TS measurer and Python service) |
+| "Watertight, manifold" | `watertight` check (already there) |
+| "Thick printable forms" | `wall_thickness` minimum 1.2 mm: `not_checked` until the Python service runs, so `needs_review` |
+
+**Still open for the fisherman:**
+1. Real print spec: height, footprint, wall thickness, tolerances, colour count (AMS slots), and the
+   palette's actual filament colours. All values in the template are placeholders.
+2. Prompts are adapted from the pickle flow and not yet trialled. Run them through Weavy with the
+   lineup as the reference image, then copy the winners back into the template.
+3. The MakerWorld "Fisherman" (by Stone) shown as a reference is someone else's design. Check its
+   licence before using its geometry for anything commercial; the lineup is Fishbelly's own.
+4. Approval question from §6.1 still stands: the customer approves the render, Meshy builds from the
+   manufacturing reference. The admin design page now shows the two side by side.
+5. Wordmark length: the fish fits about 10–12 characters. Brands are configured by us, so not
+   enforced yet; it needs a rule once brands can be added from a screen.

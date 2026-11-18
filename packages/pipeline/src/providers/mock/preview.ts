@@ -1,5 +1,6 @@
 import type { DesignSpec, ProductTemplate } from "@fishbelly/core";
-import type { PreviewGenerator } from "../types";
+import type { PreviewGenerator, ReferenceGenerator } from "../types";
+import { renderFigurineSvg } from "./figurine";
 import { centreOffset, radius, shapeParams } from "./shape";
 
 /** Draws the vase as a flat SVG. Stands in for the image model. */
@@ -52,7 +53,23 @@ export function renderPreviewSvg(spec: DesignSpec, template: ProductTemplate): s
 
 export const mockPreview: PreviewGenerator = {
   name: "mock-preview",
-  async generate({ spec, template }) {
-    return { content: renderPreviewSvg(spec, template), extension: "svg", costUsd: 0 };
+  async generate({ spec, template, brand }) {
+    const content =
+      template.category === "figurine"
+        ? renderFigurineSvg(spec, template, brand.wordmark ?? "")
+        : renderPreviewSvg(spec, template);
+    return { content, extension: "svg", costUsd: 0 };
+  },
+};
+
+/** Stands in for the image model's "manufacturing reference" edit: the same design, flat and front-on. */
+export const mockReference: ReferenceGenerator = {
+  name: "mock-reference",
+  async generate({ spec, template, brand }) {
+    const content =
+      template.category === "figurine"
+        ? renderFigurineSvg(spec, template, brand.wordmark ?? "", "flat")
+        : renderPreviewSvg(spec, template);
+    return { content, extension: "svg", costUsd: 0 };
   },
 };

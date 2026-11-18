@@ -32,7 +32,7 @@ written by `next dev`; it points at the bundled Next 16 docs in `node_modules/ne
 
 ## Next up
 
-1. Weavy flow is mapped in `docs/WEAVY_FLOW.md`; get answers to its open questions (§6).
+1. Fisherman figurine: get the real print spec and trial the prompts in Weavy (`docs/WEAVY_FLOW.md` §7).
 2. Turn on the Claude interpreter; pick and add the image model behind `PreviewGenerator`.
 3. Meshy adapter from Meshy's current API docs + Inngest for the production workflow.
 4. Supabase: apply `db/schema.sql`, write `PostgresStore` and a storage-backed `AssetStorage`;

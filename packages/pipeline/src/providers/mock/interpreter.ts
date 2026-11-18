@@ -1,5 +1,6 @@
 import { cloneSpec, type AttributeSpec } from "@fishbelly/core";
 import type { PromptInterpreter } from "../types";
+import { mockFigurineInterpreter } from "./figurine";
 
 const COLOURS: Record<string, string> = {
   white: "#f4f1ea",
@@ -22,7 +23,9 @@ const COLOURS: Record<string, string> = {
  */
 export const mockInterpreter: PromptInterpreter = {
   name: "mock-interpreter",
-  async interpret({ prompt, current, template }) {
+  async interpret(input) {
+    if (input.template.category === "figurine") return mockFigurineInterpreter.interpret(input);
+    const { prompt, current, template } = input;
     const text = prompt.toLowerCase();
     const proposed = cloneSpec(current);
     const notes: string[] = [];

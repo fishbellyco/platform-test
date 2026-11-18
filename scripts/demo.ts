@@ -1,4 +1,5 @@
 // The whole journey in the terminal, on mocks. Run with: pnpm demo
+import { describeSpec, getTemplate } from "../packages/core/src/index";
 import {
   approveDesign,
   createSession,
@@ -11,20 +12,21 @@ import {
 } from "../packages/pipeline/src/index";
 
 const deps: Deps = { store: new MemoryStore(), assets: new MemoryAssetStorage(), providers: mockProviders };
+const template = getTemplate("fisherman_001")!;
 const prompts = [
-  "A vase with a flowing texture inspired by ocean waves, slightly asymmetric, in blue",
-  "Make the texture more subtle and the vase taller",
-  "Make the base much narrower",
+  "A red beanie, a curly grey beard, round glasses and a navy jumper",
+  "Swap the hat for a yellow sou'wester and add a pink scarf",
+  "Make him twice as big and give him a fishing rod",
 ];
 
-const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
+const session = await createSession(deps, { templateId: "fisherman_001", brandId: "fishbelly" });
 console.log(`session ${session.id}\n`);
 
 let last = null;
 for (const prompt of prompts) {
   last = await submitPrompt(deps, session.id, prompt);
   console.log(`v${last.index}  "${prompt}"`);
-  console.log(`    spec: ${JSON.stringify({ ...last.spec.dimensions, ...last.spec.attributes, colour: last.spec.colour })}`);
+  console.log(describeSpec(last.spec, template).replace(/^/gm, "    "));
   for (const note of last.notes) console.log(`    note: ${note}`);
 }
 

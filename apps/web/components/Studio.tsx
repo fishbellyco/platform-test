@@ -6,6 +6,8 @@ import type { DesignVersion, SessionStatus } from "@fishbelly/core";
 interface Props {
   templateId: string;
   productName: string;
+  /** Placeholder for the first prompt, from the template. */
+  examplePrompt: string;
   /** The brand this session is opened through; it decides the workspace the design lands in. */
   brandId: string;
   /** Set when running inside a brand's iframe. */
@@ -29,7 +31,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 }
 
 /** The whole customer experience: a prompt box and a preview. Nothing else. */
-export function Studio({ templateId, productName, brandId, parentOrigin }: Props) {
+export function Studio({ templateId, productName, examplePrompt, brandId, parentOrigin }: Props) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [version, setVersion] = useState<DesignVersion | null>(null);
   const [approval, setApproval] = useState<Approval | null>(null);
@@ -127,7 +129,7 @@ export function Studio({ templateId, productName, brandId, parentOrigin }: Props
               onChange={(event) => setPrompt(event.target.value)}
               maxLength={1000}
               disabled={!sessionId}
-              placeholder={version ? "What would you like to change?" : "An ocean-wave texture, slightly asymmetric…"}
+              placeholder={version ? "What would you like to change?" : examplePrompt}
               className="min-w-0 flex-1 rounded-xl bg-white px-4 py-3 outline-none ring-1 ring-black/10 focus:ring-2 focus:ring-[var(--accent)]"
             />
             <button

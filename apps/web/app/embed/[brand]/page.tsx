@@ -24,6 +24,7 @@ export default async function EmbedPage({
       <Studio
         templateId={template.id}
         productName={template.name}
+        examplePrompt={template.examplePrompt}
         brandId={brand.id}
         parentOrigin={brand.allowedOrigin}
       />

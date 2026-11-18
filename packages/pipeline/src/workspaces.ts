@@ -83,14 +83,14 @@ export async function getWorkspaceDesign(
 
 /**
  * Who may fetch a stored file. Previews are shown to customers (studio, embed and the
- * brand's own page), so they are public by unguessable URL. Meshes are manufacturing files:
- * only users with access to the design's workspace. Anything else is refused.
+ * brand's own page), so they are public by unguessable URL. Meshes and manufacturing references
+ * are production files: only users with access to the design's workspace. Anything else is refused.
  */
 export async function canReadAsset(deps: Deps, user: User | null, key: string): Promise<boolean> {
   if (/^previews\/ses_[0-9a-f-]+\/\d+\.(svg|png)$/.test(key)) return true;
-  const mesh = /^models\/(des_[0-9a-f-]+)\.stl$/.exec(key);
-  if (!mesh || !user) return false;
-  const approved = await deps.store.get("approved", mesh[1]!);
+  const internal = /^(?:models\/(des_[0-9a-f-]+)\.stl|manufacturing\/(des_[0-9a-f-]+)\.(?:svg|png))$/.exec(key);
+  if (!internal || !user) return false;
+  const approved = await deps.store.get("approved", (internal[1] ?? internal[2])!);
   const session = approved && (await deps.store.get("sessions", approved.sessionId));
   if (!session) return false;
   return canAccessWorkspace(user, session.workspaceId, await membershipsOf(deps, user));

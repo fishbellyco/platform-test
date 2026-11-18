@@ -23,7 +23,7 @@ const makeDeps = (): Deps => ({
 
 test("full journey: prompt -> revise -> approve -> production", async () => {
   const deps = makeDeps();
-  const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "demo" });
 
   const v1 = await submitPrompt(deps, session.id, "Ocean wave texture, a bit taller, in blue");
   assert.equal(v1.spec.dimensions.height, 230);
@@ -59,7 +59,7 @@ test("full journey: prompt -> revise -> approve -> production", async () => {
 
 test("an approved design is locked", async () => {
   const deps = makeDeps();
-  const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "demo" });
   const v1 = await submitPrompt(deps, session.id, "deep vertical grooves");
   const approved = await approveDesign(deps, session.id, v1.id);
 
@@ -74,7 +74,7 @@ test("a failed provider is recorded and marks the session failed", async () => {
     ...mockProviders,
     model: { name: "broken-3d", generate: async () => Promise.reject(new Error("provider timeout")) },
   };
-  const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "demo" });
   const v1 = await submitPrompt(deps, session.id, "organic shape");
   const approved = await approveDesign(deps, session.id, v1.id);
 

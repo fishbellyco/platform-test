@@ -5,3 +5,4 @@ export * from "./validation";
 export * from "./records";
 export * from "./brands";
 export * from "./access";
+export * from "./prompts";

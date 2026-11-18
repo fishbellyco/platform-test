@@ -27,7 +27,7 @@ async function setup() {
   await deps.store.put("users", admin);
   const member = await createUser(deps, admin, { email: "Ann@Example.com", name: "Ann", role: "member" });
   const demo = await createSession(deps, { templateId: "vase_001", brandId: "demo" });
-  const own = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
+  const own = await createSession(deps, { templateId: "fisherman_001", brandId: "fishbelly" });
   return { deps, admin, member, demo, own };
 }
 
@@ -73,7 +73,7 @@ test("only admins manage access, and the last admin can't be demoted", async () 
   await setUserRole(deps, admin, admin.id, "member");
 });
 
-test("previews are public; meshes only for users with access to the design's workspace", async () => {
+test("previews are public; meshes and manufacturing references only with workspace access", async () => {
   const { deps, admin, member, demo } = await setup();
   const v1 = await submitPrompt(deps, demo.id, "wavy");
   const approved = await approveDesign(deps, demo.id, v1.id);
@@ -87,4 +87,12 @@ test("previews are public; meshes only for users with access to the design's wor
   await grantWorkspaceAccess(deps, admin, member.id, "demo");
   assert.equal(await canReadAsset(deps, member, mesh), true);
   assert.equal(await canReadAsset(deps, admin, "store.json"), false);
+
+  const fisherman = await createSession(deps, { templateId: "fisherman_001", brandId: "fishbelly" });
+  const f1 = await submitPrompt(deps, fisherman.id, "a flat cap");
+  const fApproved = await approveDesign(deps, fisherman.id, f1.id);
+  await runProduction(deps, fApproved.id);
+  const reference = `manufacturing/${fApproved.id}.svg`;
+  assert.equal(await canReadAsset(deps, member, reference), false, "member has demo, not fishbelly");
+  assert.equal(await canReadAsset(deps, admin, reference), true);
 });

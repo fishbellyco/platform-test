@@ -50,7 +50,7 @@ export interface ApprovedDesign {
   approvedAt: string;
 }
 
-export type JobKind = "interpret" | "preview" | "model_3d" | "geometry";
+export type JobKind = "interpret" | "preview" | "manufacturing_reference" | "model_3d" | "geometry";
 
 /** One row per pipeline step run. This is the debugging trail. */
 export interface GenerationJob {
@@ -72,6 +72,8 @@ export interface ManufacturingAsset {
   id: string;
   sessionId: string;
   approvedDesignId: string;
+  /** The image the 3D model was built from, when the template has that step. Compare with the approved preview. */
+  referenceImageUrl: string | null;
   meshUrl: string;
   format: "stl";
   measurements: Measurements;

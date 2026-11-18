@@ -71,6 +71,7 @@ def measure(req: MeasureRequest) -> dict:
         "baseDiameterMm": _footprint(base),
         "minWallThicknessMm": _min_wall_thickness(mesh),
         "watertight": bool(mesh.is_watertight),
+        "components": int(mesh.body_count),  # 1 = nothing floating or loose
     }
 
 

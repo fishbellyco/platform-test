@@ -33,14 +33,16 @@ create table brands (
   workspace_id    text not null references workspaces (id),
   name            text not null,
   allowed_origin  text,                         -- null = not embeddable (e.g. the standalone studio)
-  theme           jsonb not null default '{}'
+  theme           jsonb not null default '{}',
+  prompt          text not null default '',     -- brand identity for the image model
+  wordmark        text                          -- what the product carries (the fisherman's fish)
 );
 
 create table product_templates (
   id          text not null,
   version     int  not null,
   brand_id    text references brands (id),      -- null = shared catalogue; brands list what they offer
-  definition  jsonb not null,                   -- ProductTemplate
+  definition  jsonb not null,                   -- ProductTemplate (incl. prompts, palette, reference image keys)
   created_at  timestamptz not null default now(),
   primary key (id, version)                     -- templates are versioned, never edited
 );
@@ -86,7 +88,7 @@ create table approved_designs (
 create table generation_jobs (
   id           text primary key,
   session_id   text not null references design_sessions (id),
-  kind         text not null,                   -- interpret | preview | model_3d | geometry
+  kind         text not null,                   -- interpret | preview | manufacturing_reference | model_3d | geometry
   provider     text not null,
   status       text not null,                   -- running | succeeded | failed
   input        jsonb,
@@ -103,6 +105,7 @@ create table manufacturing_assets (
   id                  text primary key,
   session_id          text not null references design_sessions (id),
   approved_design_id  text not null references approved_designs (id),
+  reference_image_url text,                     -- image the 3D model was built from (if the template has that step)
   mesh_url            text not null,
   format              text not null,
   measurements        jsonb not null,

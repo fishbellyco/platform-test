@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
 import {
+  composePrompts,
   defaultSpec,
   enforceConstraints,
   evaluateMeasurements,
   getBrand,
   getTemplate,
+  needsWordmark,
   type ApprovedDesign,
+  type Brand,
   type DesignSession,
   type DesignVersion,
   type GenerationJob,
@@ -81,12 +84,16 @@ async function runStep<T>(
   }
 }
 
-async function loadSession(deps: Deps, sessionId: string): Promise<{ session: DesignSession; template: ProductTemplate }> {
+async function loadSession(
+  deps: Deps,
+  sessionId: string,
+): Promise<{ session: DesignSession; template: ProductTemplate; brand: Brand }> {
   const session = await deps.store.get("sessions", sessionId);
   if (!session) throw new PipelineError("Design session not found.", 404);
   const template = getTemplate(session.templateId);
-  if (!template) throw new PipelineError("This product is no longer available.", 404);
-  return { session, template };
+  const brand = getBrand(session.brandId);
+  if (!template || !brand) throw new PipelineError("This product is no longer available.", 404);
+  return { session, template, brand };
 }
 
 async function setStatus(deps: Deps, session: DesignSession, status: SessionStatus): Promise<void> {
@@ -102,7 +109,7 @@ export async function createSession(
   const template = getTemplate(input.templateId);
   if (!template) throw new PipelineError("Unknown product.", 404);
   const brand = getBrand(input.brandId);
-  if (!brand || !brand.templateIds.includes(template.id)) {
+  if (!brand || !brand.templateIds.includes(template.id) || (needsWordmark(template) && !brand.wordmark)) {
     throw new PipelineError("This product is not available for this brand.", 403);
   }
   const session: DesignSession = {
@@ -122,7 +129,7 @@ export async function createSession(
 
 /** Prompt -> interpret -> enforce constraints -> preview. Returns the new design version. */
 export async function submitPrompt(deps: Deps, sessionId: string, rawPrompt: string): Promise<DesignVersion> {
-  const { session, template } = await loadSession(deps, sessionId);
+  const { session, template, brand } = await loadSession(deps, sessionId);
   if (session.status !== "designing") {
     throw new PipelineError("This design has been approved and can no longer be changed.", 409);
   }
@@ -147,8 +154,15 @@ export async function submitPrompt(deps: Deps, sessionId: string, rawPrompt: str
   const { spec, adjustments } = enforceConstraints(interpreted.proposed, template);
 
   const index = versions.length + 1;
-  const previewUrl = await runStep(deps, sessionId, "preview", preview.name, { spec }, async () => {
-    const out = await preview.generate({ spec, template, previousPreviewUrl: previous?.previewUrl ?? null });
+  // Built from the enforced spec, not the customer's words.
+  const stepInput = {
+    prompt: composePrompts(brand, template, spec).preview,
+    referenceImages: template.referenceImages,
+    previousPreviewUrl: previous?.previewUrl ?? null,
+    spec,
+  };
+  const previewUrl = await runStep(deps, sessionId, "preview", preview.name, stepInput, async () => {
+    const out = await preview.generate({ ...stepInput, template, brand });
     const url = await deps.assets.put(`previews/${sessionId}/${index}.${out.extension}`, out.content);
     return { result: url, summary: { previewUrl: url }, costUsd: out.costUsd };
   });
@@ -194,7 +208,8 @@ export async function approveDesign(deps: Deps, sessionId: string, versionId: st
 }
 
 /**
- * Approved design -> 3D model -> measurements -> validation -> manufacturing asset.
+ * Approved design -> manufacturing reference (if the template has one) -> 3D model ->
+ * measurements -> validation -> manufacturing asset.
  * Runs in-process for now. With real providers this becomes an Inngest function,
  * one step.run() per runStep() below.
  * TODO: scale + base merge before measuring, and a repair/regenerate loop on failure.
@@ -202,18 +217,32 @@ export async function approveDesign(deps: Deps, sessionId: string, versionId: st
 export async function runProduction(deps: Deps, approvedId: string): Promise<ManufacturingAsset> {
   const approved = await deps.store.get("approved", approvedId);
   if (!approved) throw new PipelineError("Approved design not found.", 404);
-  const { session, template } = await loadSession(deps, approved.sessionId);
+  const { session, template, brand } = await loadSession(deps, approved.sessionId);
   if (session.status !== "approved" && session.status !== "failed") {
     throw new PipelineError("Production has already started for this design.", 409);
   }
-  const { model, geometry } = deps.providers;
+  const { reference, model, geometry } = deps.providers;
   const sessionId = session.id;
+  const spec = approved.spec;
+  const prompts = composePrompts(brand, template, spec);
   await setStatus(deps, session, "in_production");
 
   try {
+    // Only for templates that define it: a clean front-on image for 3D, made from the approved render.
+    let referenceImageUrl: string | null = null;
+    if (prompts.manufacturingReference) {
+      const input = { prompt: prompts.manufacturingReference, approvedPreviewUrl: approved.previewUrl, spec };
+      referenceImageUrl = await runStep(deps, sessionId, "manufacturing_reference", reference.name, input, async () => {
+        const out = await reference.generate({ ...input, template, brand });
+        const url = await deps.assets.put(`manufacturing/${approved.id}.${out.extension}`, out.content);
+        return { result: url, summary: { referenceImageUrl: url }, costUsd: out.costUsd };
+      });
+    }
+
     const meshKey = `models/${approved.id}.stl`;
-    const generated = await runStep(deps, sessionId, "model_3d", model.name, { approvedId, spec: approved.spec }, async () => {
-      const out = await model.generate({ spec: approved.spec, template, previewUrl: approved.previewUrl });
+    const modelInput = { prompt: prompts.model3d, imageUrl: referenceImageUrl ?? approved.previewUrl, spec };
+    const generated = await runStep(deps, sessionId, "model_3d", model.name, { approvedId, ...modelInput }, async () => {
+      const out = await model.generate({ ...modelInput, template });
       const meshUrl = await deps.assets.put(meshKey, out.content);
       return { result: { ...out, meshUrl }, summary: { meshUrl, bytes: out.content.length }, costUsd: out.costUsd };
     });
@@ -228,6 +257,7 @@ export async function runProduction(deps: Deps, approvedId: string): Promise<Man
       id: newId("mfa"),
       sessionId,
       approvedDesignId: approved.id,
+      referenceImageUrl,
       meshUrl: generated.meshUrl,
       format: generated.format,
       measurements: report.measurements,

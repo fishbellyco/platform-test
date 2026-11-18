@@ -65,6 +65,21 @@ export default async function DesignPage({ params }: { params: Promise<{ workspa
               download {asset.format.toUpperCase()}
             </a>
           </h2>
+          {asset.referenceImageUrl && (
+            // Approved image vs the image the 3D model was built from: where 2D drift shows up.
+            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {[
+                ["Approved preview", approved[0]?.previewUrl],
+                ["Manufacturing reference (3D input)", asset.referenceImageUrl],
+              ].map(([caption, url]) => (
+                <figure key={caption} className="rounded-xl bg-white p-3 ring-1 ring-black/5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="aspect-square w-full rounded-lg object-contain" />
+                  <figcaption className="mt-2 text-neutral-600">{caption}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
           <ul>
             {asset.checks.map((c) => (
               <li key={c.check}>
@@ -81,7 +96,7 @@ export default async function DesignPage({ params }: { params: Promise<{ workspa
         {jobs.map((job) => (
           <details key={job.id} className="border-t border-black/10 py-2">
             <summary className="cursor-pointer">
-              <span className="inline-block w-24">{job.kind}</span>
+              <span className="inline-block w-52">{job.kind}</span>
               <span className="inline-block w-40 text-neutral-600">{job.provider}</span>
               <span className={`inline-block w-24 ${colour[job.status] ?? ""}`}>{job.status}</span>
               <span className="text-neutral-500">

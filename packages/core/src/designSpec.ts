@@ -4,6 +4,8 @@ export interface AttributeSpec {
   description: string;
   /** 0 = barely there, 1 = as strong as the product allows. */
   intensity: number;
+  /** Hex colour of this part. Only on templates with a palette, and always one of its colours. */
+  colour?: string;
 }
 
 /**
@@ -28,12 +30,18 @@ export function defaultSpec(template: ProductTemplate): DesignSpec {
   for (const [key, rule] of Object.entries(template.dimensions)) {
     if (rule.kind === "range") dimensions[key] = rule.default;
   }
+  const palette = template.palette;
+  const attributes: Record<string, AttributeSpec> = {};
+  for (const [key, value] of Object.entries(template.defaults)) {
+    const colour = value.colour ? palette?.colours[value.colour] : undefined;
+    attributes[key] = { description: value.description, intensity: 0.5, ...(colour ? { colour } : {}) };
+  }
   return {
     templateId: template.id,
     templateVersion: template.version,
     dimensions,
-    attributes: {},
-    colour: DEFAULT_COLOUR,
+    attributes,
+    colour: (palette && palette.colours[palette.default]) || DEFAULT_COLOUR,
     summary: template.name,
   };
 }

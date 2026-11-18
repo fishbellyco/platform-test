@@ -15,6 +15,10 @@ export interface Brand {
   allowedOrigin: string | null;
   templateIds: string[];
   theme: { accent: string };
+  /** Brand identity for the image model, placed before the product prompt. May be empty. */
+  prompt: string;
+  /** Text the product carries for this brand (the fisherman's fish). Null = this brand has none. */
+  wordmark: string | null;
 }
 
 // Placeholder tenants for local development. Move to the database with real clients.
@@ -31,16 +35,20 @@ const BRANDS: Record<string, Brand> = {
     workspaceId: "fishbelly",
     name: "Fishbelly",
     allowedOrigin: null,
-    templateIds: ["vase_001"],
+    templateIds: ["fisherman_001"],
     theme: { accent: "#1f3a5f" },
+    prompt: "",
+    wordmark: "FISHBELLY",
   },
   demo: {
     id: "demo",
     workspaceId: "demo",
     name: "Demo Brand",
     allowedOrigin: "http://localhost:3000",
-    templateIds: ["vase_001"],
+    templateIds: ["vase_001", "fisherman_001"],
     theme: { accent: "#1f3a5f" },
+    prompt: "",
+    wordmark: "DEMO BRAND",
   },
 };
 

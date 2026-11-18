@@ -17,9 +17,9 @@ Everything runs on mock providers by default: no keys, no database, no cost.
 
 | URL | What |
 | --- | --- |
-| `/studio` | Standalone customer experience |
+| `/studio` | Standalone customer experience: personalise the fisherman figurine |
 | `/embed-demo.html` | A pretend brand page that opens the embed |
-| `/embed/demo?product=vase_001` | The embed itself |
+| `/embed/demo?product=vase_001` | The embed itself (also `?product=fisherman_001`, with Demo Brand's wordmark on the fish) |
 | `/login` | Development sign-in: pick a seeded user (admin, member of Demo Brand, member with no access) |
 | `/admin` | Designs in the workspaces you can see, step by step; switch workspace at the top |
 | `/admin/access` | Admins: add users, set roles, choose who sees which workspace |
@@ -57,4 +57,6 @@ management for each role. No automated browser tests yet.
 **Not built yet:** Meshy adapter, image model, Inngest, Supabase, Stripe, scale/base-merge/repair,
 embed session tokens, real sign-in, rate limits. See the milestones in the architecture doc.
 
-The vase dimensions in `packages/core/src/template.ts` are placeholders.
+Products: `fisherman_001` (the brand-agnostic example; the Weavy flow rebuilt for it, see
+`docs/WEAVY_FLOW.md` §7) and `vase_001`. Dimensions, palettes and prompts in
+`packages/core/src/template.ts` are placeholders.

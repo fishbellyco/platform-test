@@ -7,6 +7,8 @@ export interface Measurements {
   baseDiameterMm: number | null;
   minWallThicknessMm: number | null;
   watertight: boolean | null;
+  /** Separate connected pieces in the mesh. 1 = nothing floating or loose. */
+  components: number | null;
 }
 
 export type CheckStatus = "pass" | "fail" | "not_checked";
@@ -77,6 +79,19 @@ export function evaluateMeasurements(m: Measurements, template: ProductTemplate)
             check: "watertight",
             status: m.watertight ? "pass" : "fail",
             detail: m.watertight ? "Closed, printable surface." : "Mesh has holes or open edges.",
+          },
+    );
+  }
+
+  if (template.validation.requireSinglePiece) {
+    checks.push(
+      m.components === null
+        ? { check: "single_piece", status: "not_checked", detail: "Connected parts were not counted." }
+        : {
+            check: "single_piece",
+            status: m.components === 1 ? "pass" : "fail",
+            detail:
+              m.components === 1 ? "One connected piece." : `${m.components} separate pieces: something is floating or loose.`,
           },
     );
   }

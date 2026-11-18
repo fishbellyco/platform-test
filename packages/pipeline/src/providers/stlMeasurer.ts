@@ -19,6 +19,7 @@ export function measureAsciiStl(stl: string): Measurements {
       baseDiameterMm: null,
       minWallThicknessMm: null,
       watertight: null,
+      components: null,
     };
   }
 
@@ -37,6 +38,22 @@ export function measureAsciiStl(stl: string): Measurements {
 
   // Watertight: every edge is shared by exactly two triangles.
   const key = (v: [number, number, number]) => v.map((n) => n.toFixed(3)).join(",");
+
+  // Connected pieces: triangles sharing a vertex belong to the same piece (union-find).
+  const parent = new Map<string, string>();
+  const find = (a: string): string => {
+    let root = a;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    parent.set(a, root);
+    return root;
+  };
+  for (let i = 0; i < verts.length; i += 3) {
+    const tri = [key(verts[i]!), key(verts[i + 1]!), key(verts[i + 2]!)];
+    for (const k of tri) if (!parent.has(k)) parent.set(k, k);
+    parent.set(find(tri[1]!), find(tri[0]!));
+    parent.set(find(tri[2]!), find(tri[0]!));
+  }
+  const components = new Set([...parent.keys()].map(find)).size;
   const edges = new Map<string, number>();
   for (let i = 0; i < verts.length; i += 3) {
     const tri = [key(verts[i]!), key(verts[i + 1]!), key(verts[i + 2]!)];
@@ -61,6 +78,7 @@ export function measureAsciiStl(stl: string): Measurements {
     baseDiameterMm: footprint(base),
     minWallThicknessMm: null,
     watertight,
+    components,
   };
 }
 

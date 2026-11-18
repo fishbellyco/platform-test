@@ -55,17 +55,23 @@
 
 1. **Interpret** — LLM turns the prompt into a proposed `DesignSpec` (JSON).
 2. **Enforce** — code checks the spec against the product template. Locked parts are kept, out-of-range values clamped, non-permitted features dropped. The customer is told what was kept and why.
-3. **Preview** — image model renders the spec, guided by a reference render of the template.
+3. **Preview** — image model renders the spec, guided by the template's reference images.
 4. **Refine** — each follow-up prompt changes the spec, not the conversation. The image model edits the last preview.
 5. **Approve** — creates an immutable `ApprovedDesign`. Payment follows.
-6. **3D** — Meshy image-to-3D from the approved preview (multi-view if available).
-7. **Geometry** — scale to template, merge the fixed base, measure, validate.
-8. **Gate** — `production_ready`, `needs_review` or `failed`. Only `production_ready` goes to a manufacturer automatically.
-9. **Route by method:**
+6. **Manufacturing reference** *(templates that define it)* — image model turns the approved render into a clean, flat, front-on image for 3D.
+7. **3D** — Meshy image-to-3D from the manufacturing reference (or the approved preview).
+8. **Geometry** — scale to template, merge the fixed base, measure, validate.
+9. **Gate** — `production_ready`, `needs_review` or `failed`. Only `production_ready` goes to a manufacturer automatically.
+10. **Route by method:**
    - plastic → STL / 3MF to the printer
    - precious metal → print-ready master for the mould, scaled for shrinkage
    - embroidery → separate 2D vector + stitch-file path, no Meshy
-10. **Handoff** — production pack (file, specs, order reference).
+11. **Handoff** — production pack (file, specs, order reference).
+
+**Steps per template.** A template's prompts decide the image steps: the fisherman has a
+manufacturing-reference step between approval and 3D (as in the Weavy flow); the vase goes straight
+from the approved preview to 3D. Prompts are built in code by `composePrompts()` from the brand,
+the template and the enforced spec, never from the customer's raw text.
 
 ## 4. Where constraints are enforced
 
@@ -105,7 +111,7 @@
 
 - **2D → 3D drift.** The customer approves an image; the mesh may differ.
   - Mitigations: reference render in every preview, multi-view input to Meshy, render the finished mesh and compare with the approved image before release.
-- **Dimensions.** Meshy output has no reliable scale or wall thickness. Handled by step 7, never by prompting.
+- **Dimensions.** Meshy output has no reliable scale or wall thickness. Handled by step 8, never by prompting.
 - **Cost.** Revisions are cheap (images); 3D runs only after approval and payment. Cap revisions per session.
 - **Embroidery** is a different product pipeline. Decide whether it is in the first release.
 
@@ -115,7 +121,7 @@
 - **Proposed here:** Supabase, Inngest, Python measuring service, rules in TypeScript, Stripe.
 - **Open:**
   - Which image model for previews?
-  - First real product and its true dimensions (vase values are placeholders)
+  - Fisherman figurine print spec: true dimensions, palette and colour count (template values are placeholders)
   - Manufacturer file formats and tolerances
   - Does the embed session start from a signed token issued by the brand's server?
   - Customer approves the concept render, but Meshy builds from the manufacturing reference (see `WEAVY_FLOW.md` §6).
