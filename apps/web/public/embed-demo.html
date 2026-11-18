@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo Brand — product page</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; }
+      button { padding: 12px 20px; border-radius: 10px; border: 0; background: #1f3a5f; color: #fff; font-size: 16px; cursor: pointer; }
+      pre { background: #f2f2f2; padding: 12px; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <!-- Stand-in for a brand's product page. Open at http://localhost:3000/embed-demo.html -->
+    <h1>Organic Vase</h1>
+    <p>A pretend product page on a brand's own site.</p>
+    <button id="customise">Customise with AI</button>
+    <pre id="result">No design yet.</pre>
+
+    <script src="/embed.js"></script>
+    <script>
+      document.getElementById("customise").addEventListener("click", function () {
+        Fishbelly.open({
+          brand: "demo",
+          product: "vase_001",
+          onApproved: function (design) {
+            // A real brand would add design.designId to the cart line here.
+            document.getElementById("result").textContent = JSON.stringify(design, null, 2);
+          },
+        });
+      });
+    </script>
+  </body>
+</html>
