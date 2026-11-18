@@ -38,9 +38,11 @@ Local data lives in `apps/web/.data/` (delete it to reset).
 
 **Working and tested** (`pnpm test`, `pnpm demo`): `packages/core`, `packages/pipeline` on mocks.
 
+**Working, checked by hand** (`pnpm dev`, `pnpm build`): `apps/web` on mocks: studio, embed via
+`/embed-demo.html` (approval reaches the parent page), and admin. No automated browser tests yet.
+
 **Written but not yet run** (no package installs were possible where this was scaffolded):
 
-- `apps/web` — first job is `pnpm install && pnpm dev` and fix whatever comes up.
 - `services/geometry` — needs `pip install -r requirements.txt`, then test against known meshes.
 - `providers/claude.ts` — set `FISHBELLY_INTERPRETER=claude` and `ANTHROPIC_API_KEY`.
 

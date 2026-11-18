@@ -1,6 +1,7 @@
 # Fishbelly — working notes for Claude Code
 
-Read `docs/ARCHITECTURE.md` first. `README.md` says what is tested and what has never been run.
+Read `docs/ARCHITECTURE.md` first. `README.md` says what is tested and what has never been run. `apps/web/AGENTS.md` is
+written by `next dev`; it points at the bundled Next 16 docs in `node_modules/next/dist/docs/`.
 
 ## Commands
 
@@ -27,8 +28,7 @@ Read `docs/ARCHITECTURE.md` first. `README.md` says what is tested and what has 
 
 ## Next up
 
-1. `pnpm install`, run `pnpm dev`, fix anything in `apps/web` (it has never been run).
-2. Map the Weavy flow's nodes onto pipeline steps; note the models and settings it uses.
-3. Turn on the Claude interpreter; pick and add the image model behind `PreviewGenerator`.
-4. Meshy adapter from Meshy's current API docs + Inngest for the production workflow.
-5. Supabase: apply `db/schema.sql`, write `PostgresStore` and a storage-backed `AssetStorage`.
+1. Map the Weavy flow's nodes onto pipeline steps; note the models and settings it uses.
+2. Turn on the Claude interpreter; pick and add the image model behind `PreviewGenerator`.
+3. Meshy adapter from Meshy's current API docs + Inngest for the production workflow.
+4. Supabase: apply `db/schema.sql`, write `PostgresStore` and a storage-backed `AssetStorage`.
