@@ -5,3 +5,4 @@ export * from "./providers/types";
 export * from "./providers/index";
 export { measureAsciiStl } from "./providers/stlMeasurer";
 export { buildMockStl } from "./providers/mock/model";
+export * from "./workspaces";

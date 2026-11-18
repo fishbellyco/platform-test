@@ -17,7 +17,7 @@ const prompts = [
   "Make the base much narrower",
 ];
 
-const session = await createSession(deps, { templateId: "vase_001", brandId: null });
+const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
 console.log(`session ${session.id}\n`);
 
 let last = null;

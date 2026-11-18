@@ -25,10 +25,15 @@ written by `next dev`; it points at the bundled Next 16 docs in `node_modules/ne
 7. **One core, two front doors.** `/studio` and `/embed` both render `components/Studio.tsx`.
 8. **The customer UI is a prompt box and a preview.** No sliders, no 3D editor, no technical settings.
 9. `packages/core` stays dependency-free and browser-safe (no Node imports).
+10. **Tenant data is read only through `packages/pipeline/src/workspaces.ts`.** Every `/admin` page,
+    server action and route handler gets the user from `apps/web/lib/auth.ts` and passes it in.
+    Never call `store.list("sessions")` (or any tenant table) from the app directly, and never treat
+    a layout as an access check.
 
 ## Next up
 
-1. Map the Weavy flow's nodes onto pipeline steps; note the models and settings it uses.
+1. Weavy flow is mapped in `docs/WEAVY_FLOW.md`; get answers to its open questions (§6).
 2. Turn on the Claude interpreter; pick and add the image model behind `PreviewGenerator`.
 3. Meshy adapter from Meshy's current API docs + Inngest for the production workflow.
-4. Supabase: apply `db/schema.sql`, write `PostgresStore` and a storage-backed `AssetStorage`.
+4. Supabase: apply `db/schema.sql`, write `PostgresStore` and a storage-backed `AssetStorage`;
+   Supabase Auth behind `getCurrentUser()`, row-level security per `db/schema.sql`.

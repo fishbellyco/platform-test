@@ -13,7 +13,10 @@ export type SessionStatus =
 
 export interface DesignSession {
   id: string;
-  brandId: string | null;
+  /** The client this design belongs to. Set once from the brand; never changes. */
+  workspaceId: string;
+  /** The brand it was opened through (the standalone studio is Fishbelly's own brand). */
+  brandId: string;
   templateId: string;
   templateVersion: number;
   status: SessionStatus;
@@ -74,5 +77,26 @@ export interface ManufacturingAsset {
   measurements: Measurements;
   checks: CheckResult[];
   outcome: ValidationOutcome;
+  createdAt: string;
+}
+
+export type UserRole = "admin" | "member";
+
+/** Someone who signs in to the internal app. Customers using /studio or /embed are not users. */
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  /** admin: every workspace, and manages access. member: only workspaces they've been given. */
+  role: UserRole;
+  createdAt: string;
+}
+
+/** Gives one member access to one workspace. Id is `${userId}:${workspaceId}`. */
+export interface WorkspaceMembership {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  grantedBy: string;
   createdAt: string;
 }

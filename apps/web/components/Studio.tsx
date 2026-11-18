@@ -6,8 +6,9 @@ import type { DesignVersion, SessionStatus } from "@fishbelly/core";
 interface Props {
   templateId: string;
   productName: string;
+  /** The brand this session is opened through; it decides the workspace the design lands in. */
+  brandId: string;
   /** Set when running inside a brand's iframe. */
-  brandId?: string;
   parentOrigin?: string;
 }
 
@@ -40,7 +41,7 @@ export function Studio({ templateId, productName, brandId, parentOrigin }: Props
   useEffect(() => {
     if (started.current) return; // React dev mode runs effects twice
     started.current = true;
-    post<{ session: { id: string } }>("/api/sessions", { templateId, brandId: brandId ?? null })
+    post<{ session: { id: string } }>("/api/sessions", { templateId, brandId })
       .then((data) => setSessionId(data.session.id))
       .catch((err: Error) => setError(err.message));
   }, [templateId, brandId]);

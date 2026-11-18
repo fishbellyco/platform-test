@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { getWorkspaceDesign } from "@fishbelly/pipeline";
+import { orNotFound, requireUser } from "@/lib/auth";
 import { getDeps } from "@/lib/deps";
 
 export const dynamic = "force-dynamic";
@@ -14,17 +15,12 @@ const colour: Record<string, string> = {
 
 // One design, start to finish: versions, every pipeline step, validation results.
 // TODO: "rerun from this step" button and a 3D viewer for the mesh.
-export default async function DesignPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const { store } = getDeps();
-  const session = await store.get("sessions", id);
-  if (!session) notFound();
-  const [versions, jobs, approved, assets] = await Promise.all([
-    store.list("versions", { sessionId: id }),
-    store.list("jobs", { sessionId: id }),
-    store.list("approved", { sessionId: id }),
-    store.list("assets", { sessionId: id }),
-  ]);
+export default async function DesignPage({ params }: { params: Promise<{ workspace: string; id: string }> }) {
+  const { workspace, id } = await params;
+  const user = await requireUser();
+  const { session, versions, jobs, approved, assets } = await orNotFound(
+    getWorkspaceDesign(getDeps(), user, workspace, id),
+  );
   const totalCost = jobs.reduce((sum, job) => sum + job.costUsd, 0);
 
   return (
@@ -32,7 +28,7 @@ export default async function DesignPage({ params }: { params: Promise<{ id: str
       <header>
         <h1 className="font-mono text-base">{session.id}</h1>
         <p className="text-neutral-600">
-          {session.templateId} v{session.templateVersion} · {session.brandId ?? "standalone"} · status{" "}
+          {session.templateId} v{session.templateVersion} · {session.brandId} · status{" "}
           <strong>{session.status}</strong> · cost ${totalCost.toFixed(4)}
         </p>
       </header>

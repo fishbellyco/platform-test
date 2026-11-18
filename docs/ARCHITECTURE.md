@@ -12,12 +12,12 @@
 - Each Weavy node becomes one typed pipeline step in the repo.
 - Why: per-step logs, retries, rerun-from-failed-step, cost tracking, everything in git.
 - New models and prompts are trialled in Weavy, then copied into the code.
-- Not yet done: mapping the existing Weavy flow node by node (the flow is login-only, so it needs a screenshot or node list).
+- The Weavy flow is mapped node by node in [`WEAVY_FLOW.md`](WEAVY_FLOW.md) (from screenshots; settings still to confirm).
 
 ## 2. Stack
 
 - **App:** one Next.js app (TypeScript, Tailwind).
-  - `/studio` standalone, `/embed/[brand]` iframe version, `/admin` internal view.
+  - `/studio` standalone, `/embed/[brand]` iframe version, `/admin/[workspace]` internal view.
   - All three sit on the same core and pipeline.
 - **Embed:** `embed.js` opens the iframe and returns `design_id` to the brand page by `postMessage`. Brand keeps checkout.
 - **Data:** Postgres + file storage on Supabase *(next — scaffold uses a local JSON store behind the same interface)*.
@@ -28,6 +28,28 @@
   - image model for previews (not yet chosen)
   - Meshy for 3D
 - **Payments:** Stripe for standalone *(next)*. Brand checkout for embedded.
+
+## 2a. Workspaces and access
+
+- **A workspace is one client.** Brands belong to a workspace. A design session belongs to the
+  workspace of the brand it was opened through (the standalone `/studio` is Fishbelly's own brand,
+  in the Fishbelly workspace). Everything a session produces belongs to it.
+- **Users** sign in to `/admin`. Customers using `/studio` or `/embed` are not users.
+  - `admin`: sees every workspace, and manages users and access at `/admin/access`.
+  - `member`: sees only the workspaces an admin has ticked for them.
+- **Switching workspace is navigation.** The workspace is in every URL (`/admin/<workspace>/…`),
+  so links can be shared and there is no hidden "current workspace" state.
+- **Enforced in one place.** Rules in `packages/core/src/access.ts`; every read and change goes
+  through `packages/pipeline/src/workspaces.ts`, which checks the user first. Pages, server actions
+  and route handlers never read tenant data from the store directly. Layouts are display only.
+- "No access" and "doesn't exist" both give a 404, so ids don't leak between clients.
+- Previews are public by unguessable URL (customers and brand pages show them). Meshes need a
+  signed-in user with access to the design's workspace.
+- **Sign-in is development-only today** (`/login`: pick a seeded user; off when
+  `NODE_ENV=production`). *(next)* Supabase Auth replaces `getCurrentUser()` in
+  `apps/web/lib/auth.ts`, and row-level security repeats the workspace rule in the database
+  (sketch in `db/schema.sql`).
+- *(next)* Workspaces, brands and templates move from code to the database, with a screen to add a client.
 
 ## 3. Pipeline
 
@@ -56,14 +78,15 @@
 ## 5. Debugging
 
 - Every step writes a `generation_jobs` row: input, output, provider, cost, duration, error.
-- `/admin/designs/[id]` shows the whole timeline for one design.
+- `/admin/[workspace]/designs/[id]` shows the whole timeline for one design.
 - Prompts and model choices live in the repo.
 - Mock mode runs the whole journey for free (`pnpm demo`, `pnpm test`).
 - *(next)* rerun-from-step button, Sentry, Langfuse, 3D viewer in admin.
 
 ## 6. Data model
 
-- `brands`, `product_templates` (versioned)
+- `workspaces`, `users`, `workspace_members`
+- `brands` (in a workspace), `product_templates` (versioned)
 - `design_sessions` → `design_versions` → `approved_designs` (immutable)
 - `generation_jobs` (one per step run)
 - `manufacturing_assets` (file + measurements + check results)
@@ -95,6 +118,8 @@
   - First real product and its true dimensions (vase values are placeholders)
   - Manufacturer file formats and tolerances
   - Does the embed session start from a signed token issued by the brand's server?
+  - Customer approves the concept render, but Meshy builds from the manufacturing reference (see `WEAVY_FLOW.md` §6).
+  - Can client users do more than view (e.g. approve, re-run, download)? Today members can view and download meshes.
   - Is embroidery in the first release?
 
 ## 10. Milestones
@@ -104,4 +129,4 @@
 3. **Real 3D** — Meshy adapter, Inngest, Supabase.
 4. **Real geometry** — scale, base merge, wall thickness, repair/regenerate loop.
 5. **Embed with a real brand** — signed sessions, theming, cart handoff.
-6. **Hardening** — auth, tenant isolation, quotas, monitoring.
+6. **Hardening** — real sign-in (Supabase Auth), row-level security, quotas, monitoring. *(Workspace isolation in the app: done.)*

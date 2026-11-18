@@ -6,6 +6,8 @@ import type {
   DesignVersion,
   GenerationJob,
   ManufacturingAsset,
+  User,
+  WorkspaceMembership,
 } from "@fishbelly/core";
 
 export interface Tables {
@@ -14,6 +16,8 @@ export interface Tables {
   approved: ApprovedDesign;
   jobs: GenerationJob;
   assets: ManufacturingAsset;
+  users: User;
+  memberships: WorkspaceMembership;
 }
 type Table = keyof Tables;
 type Data = { [K in Table]: Record<string, Tables[K]> };
@@ -25,9 +29,19 @@ export interface Store {
   put<K extends Table>(table: K, row: Tables[K]): Promise<void>;
   /** Rows in insertion order, optionally filtered by exact field matches. */
   list<K extends Table>(table: K, where?: Partial<Tables[K]>): Promise<Tables[K][]>;
+  /** Removes a row if present. Refuses to delete an approved design. */
+  delete(table: Table, id: string): Promise<void>;
 }
 
-const empty = (): Data => ({ sessions: {}, versions: {}, approved: {}, jobs: {}, assets: {} });
+const empty = (): Data => ({
+  sessions: {},
+  versions: {},
+  approved: {},
+  jobs: {},
+  assets: {},
+  users: {},
+  memberships: {},
+});
 
 abstract class BaseStore implements Store {
   protected abstract read(): Data;
@@ -51,6 +65,13 @@ abstract class BaseStore implements Store {
     const rows = Object.values(this.read()[table] as Record<string, Tables[K]>);
     const filters = Object.entries(where) as [keyof Tables[K], unknown][];
     return rows.filter((row) => filters.every(([key, value]) => row[key] === value));
+  }
+
+  async delete(table: Table, id: string): Promise<void> {
+    if (table === "approved") throw new Error(`Approved design ${id} is immutable.`);
+    const data = this.read();
+    delete (data[table] as Record<string, unknown>)[id];
+    this.write(data);
   }
 }
 

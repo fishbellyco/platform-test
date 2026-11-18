@@ -97,19 +97,18 @@ async function setStatus(deps: Deps, session: DesignSession, status: SessionStat
 
 export async function createSession(
   deps: Deps,
-  input: { templateId: string; brandId: string | null },
+  input: { templateId: string; brandId: string },
 ): Promise<DesignSession> {
   const template = getTemplate(input.templateId);
   if (!template) throw new PipelineError("Unknown product.", 404);
-  if (input.brandId !== null) {
-    const brand = getBrand(input.brandId);
-    if (!brand || !brand.templateIds.includes(template.id)) {
-      throw new PipelineError("This product is not available for this brand.", 403);
-    }
+  const brand = getBrand(input.brandId);
+  if (!brand || !brand.templateIds.includes(template.id)) {
+    throw new PipelineError("This product is not available for this brand.", 403);
   }
   const session: DesignSession = {
     id: newId("ses"),
-    brandId: input.brandId,
+    workspaceId: brand.workspaceId,
+    brandId: brand.id,
     templateId: template.id,
     templateVersion: template.version,
     status: "designing",

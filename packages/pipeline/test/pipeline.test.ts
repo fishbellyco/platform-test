@@ -23,7 +23,7 @@ const makeDeps = (): Deps => ({
 
 test("full journey: prompt -> revise -> approve -> production", async () => {
   const deps = makeDeps();
-  const session = await createSession(deps, { templateId: "vase_001", brandId: null });
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
 
   const v1 = await submitPrompt(deps, session.id, "Ocean wave texture, a bit taller, in blue");
   assert.equal(v1.spec.dimensions.height, 230);
@@ -59,7 +59,7 @@ test("full journey: prompt -> revise -> approve -> production", async () => {
 
 test("an approved design is locked", async () => {
   const deps = makeDeps();
-  const session = await createSession(deps, { templateId: "vase_001", brandId: null });
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
   const v1 = await submitPrompt(deps, session.id, "deep vertical grooves");
   const approved = await approveDesign(deps, session.id, v1.id);
 
@@ -74,7 +74,7 @@ test("a failed provider is recorded and marks the session failed", async () => {
     ...mockProviders,
     model: { name: "broken-3d", generate: async () => Promise.reject(new Error("provider timeout")) },
   };
-  const session = await createSession(deps, { templateId: "vase_001", brandId: null });
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "fishbelly" });
   const v1 = await submitPrompt(deps, session.id, "organic shape");
   const approved = await approveDesign(deps, session.id, v1.id);
 
@@ -85,10 +85,12 @@ test("a failed provider is recorded and marks the session failed", async () => {
   assert.equal((await deps.store.get("sessions", session.id))?.status, "failed");
 });
 
-test("brand can only open its own products", async () => {
+test("brand can only open its own products, and the session joins the brand's workspace", async () => {
   const deps = makeDeps();
   await assert.rejects(createSession(deps, { templateId: "vase_001", brandId: "nobody" }), /not available/);
-  assert.equal((await createSession(deps, { templateId: "vase_001", brandId: "demo" })).brandId, "demo");
+  const session = await createSession(deps, { templateId: "vase_001", brandId: "demo" });
+  assert.equal(session.brandId, "demo");
+  assert.equal(session.workspaceId, "demo");
 });
 
 test("validation catches a mesh at the wrong scale and a mesh with a hole", () => {

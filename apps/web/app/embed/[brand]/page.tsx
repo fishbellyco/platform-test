@@ -17,7 +17,7 @@ export default async function EmbedPage({
   const { product } = await searchParams;
   const brand = getBrand(brandId);
   const template = product ? getTemplate(product) : null;
-  if (!brand || !template || !brand.templateIds.includes(template.id)) notFound();
+  if (!brand?.allowedOrigin || !template || !brand.templateIds.includes(template.id)) notFound();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6" style={{ "--accent": brand.theme.accent } as CSSProperties}>

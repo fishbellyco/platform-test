@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const body = await readJson(req);
     const session = await createSession(getDeps(), {
       templateId: typeof body.templateId === "string" ? body.templateId : "",
-      brandId: typeof body.brandId === "string" ? body.brandId : null,
+      brandId: typeof body.brandId === "string" ? body.brandId : "",
     });
     return { session };
   });
